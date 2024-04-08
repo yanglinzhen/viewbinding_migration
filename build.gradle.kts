@@ -1,7 +1,7 @@
 plugins {
   id("java")
-  id("org.jetbrains.kotlin.jvm") version "1.9.20"
-  id("org.jetbrains.intellij") version "1.16.0"
+  id("org.jetbrains.intellij") version "1.17.3"
+  id("org.jetbrains.kotlin.jvm") version "1.9.23"
 }
 
 group = "com.ylz"
@@ -15,50 +15,38 @@ repositories {
   maven { url = uri("https://maven.aliyun.com/repository/spring-plugin/") }
   maven { url = uri("https://maven.aliyun.com/repository/grails-core/") }
   maven { url = uri("https://maven.aliyun.com/repository/apache-snapshots/") }
-
   mavenCentral()
 }
 
 dependencies {
-  implementation("org.jetbrains.kotlin:kotlin-stdlib")
-  implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable")
-  // add kotlin reflect dependency
-  testImplementation("com.winterbe:expekt:0.5.0") {
-    exclude(group = "org.jetbrains.kotlin")
-  }
+  implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.23")
 }
 
-// Configure Gradle IntelliJ Plugin
-// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
-intellij {
-  version.set("2023.1.5")
-  type.set("IC") // Target IDE Platform
+java {
+  sourceCompatibility = JavaVersion.VERSION_17
+}
 
-  plugins.set(listOf(/* Plugin Dependencies */))
+// See https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
+intellij {
+  version.set("2023.2.6")
 }
 
 tasks {
-  // Set the JVM compatibility versions
-  withType<JavaCompile> {
-    sourceCompatibility = "17"
-    targetCompatibility = "17"
-  }
-  withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+  buildSearchableOptions {
+    enabled = false
   }
 
   patchPluginXml {
-    sinceBuild.set("231")
+    version.set("${project.version}")
+    sinceBuild.set("232")
     untilBuild.set("241.*")
   }
 
-  signPlugin {
-    certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-    privateKey.set(System.getenv("PRIVATE_KEY"))
-    password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
+  compileKotlin {
+    kotlinOptions.jvmTarget = "17"
   }
 
-  publishPlugin {
-    token.set(System.getenv("PUBLISH_TOKEN"))
+  compileTestKotlin {
+    kotlinOptions.jvmTarget = "17"
   }
 }

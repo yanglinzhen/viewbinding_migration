@@ -1,21 +1,8 @@
 package com.ylz.kt_extension_refactor
 
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.LangDataKeys
-import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.ui.Messages
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
-import org.jetbrains.kotlin.com.intellij.psi.PsiMethod
-import org.jetbrains.kotlin.psi.KtClass
-
-import org.jetbrains.kotlin.idea.KotlinLanguage
-import org.jetbrains.kotlin.psi.*
-import com.intellij.openapi.ui.messages.MessageDialog
-import com.intellij.openapi.ui.popup.BalloonBuilder
-import com.intellij.openapi.util.NlsContexts
+import org.jetbrains.kotlin.psi.KtFile
 
 class InsertVariableAction : AnAction() {
 
@@ -24,6 +11,8 @@ class InsertVariableAction : AnAction() {
     override fun actionPerformed(action: AnActionEvent) {
         getPsiClassFromEvent(action)
     }
+
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
 //        ktClass = getPsiClassFromEvent(e)
@@ -34,17 +23,24 @@ class InsertVariableAction : AnAction() {
 
     private fun getPsiClassFromEvent(e: AnActionEvent)/*: KtClass?*/ {
         val editor = e.getData(PlatformDataKeys.EDITOR) ?: return
-
-        val project = editor.project ?: return
-
         val psiFile = e.getData(LangDataKeys.PSI_FILE)
-        Messages.showDialog(
-                "File: ${psiFile?.name}",
-                "Title",
-                emptyArray<String>(),
-                0,
-                null
-        )
+        val currentProj = e.project
+
+        (psiFile as? KtFile)?.let {
+            """
+                File name: ${it.containingFile.name}
+                Imports: ${it.importList?.imports?.joinToString { import ->
+                    import.containingFile.name
+                }}
+            """.trimIndent()
+        }?.let {
+            Messages.showMessageDialog(
+                    currentProj,
+                    it,
+                    "Title",
+                    Messages.getInformationIcon()
+            )
+        }
 //            println("KtFile: ${psiFile.virtualFilePath}")
 
 //        Psi
