@@ -10,6 +10,14 @@
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.kotlin</depends>
+
+<!--  <extensions defaultExtensionNs="com.intellij">-->
+<!--          &lt;!&ndash; annotator kotlin &ndash;&gt;-->
+<!--        <annotator language="kotlin" implementationClass="com.ylz.kt_extension_refactor.KtExtensionAnnotator"/>-->
+
+<!--  </extensions>-->
+
   <actions>
     <action id="com.ylz.kt_extension_refactor.InsertVariableAction"
             class="com.ylz.kt_extension_refactor.InsertVariableAction" text="Insert variable"
