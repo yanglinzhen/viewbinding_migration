@@ -1,54 +1,64 @@
 package com.ylz.kt_extension_refactor
 
-import com.intellij.openapi.actionSystem.*
-import com.intellij.openapi.ui.Messages
+import com.intellij.find.FindManager
+import com.intellij.find.impl.FindManagerImpl
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiElement
+import com.intellij.usages.Usage
+import com.intellij.usages.impl.UsageViewImpl
 import org.jetbrains.kotlin.psi.KtFile
+import org.junit.Assert
 
 class InsertVariableAction : AnAction() {
 
-//    private var ktClass: KtClass? = null
-
     override fun actionPerformed(action: AnActionEvent) {
-        getPsiClassFromEvent(action)
+
+        findAllUsages(action.getData(LangDataKeys.PSI_ELEMENT)!!, action.project!!)
+//        getImportStringFromKtFile(action).firstOrNull()?.let {
+//        }
+
+//        AndroidGotoDeclarationHandler().getGotoDeclarationTargets(
+//            action.getData(LangDataKeys.PSI_ELEMENT) as? KtSimpleNameExpression,
+//            0,
+//            action.getData(LangDataKeys.EDITOR)
+//        )?.let {
+//            // 这里可以获取到目标元素，可以进行一些操作
+//            println(it)
+//        }
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-//        ktClass = getPsiClassFromEvent(e)
-
-//        e.presentation.isEnabled = ktClass != null &&
-//                !ktClass.isEnum() && !ktClass.isInterface()
     }
 
-    private fun getPsiClassFromEvent(e: AnActionEvent)/*: KtClass?*/ {
-        val editor = e.getData(PlatformDataKeys.EDITOR) ?: return
+    private fun findAllUsages(targetElement: PsiElement, project: Project): MutableSet<Usage> {
+        val usagesManager = (FindManager.getInstance(project) as FindManagerImpl).findUsagesManager
+        val handler = usagesManager.getFindUsagesHandler(targetElement, false)
+        Assert.assertNotNull("Cannot find handler for: $targetElement", handler)
+        val usageView =
+            usagesManager.doFindUsages(
+                handler!!.primaryElements,
+                handler.secondaryElements,
+                handler,
+                handler.findUsagesOptions,
+                false
+            ) as UsageViewImpl
+
+        return usageView.usages
+    }
+
+    private fun getImportStringFromKtFile(e: AnActionEvent): List<PsiElement> {
         val psiFile = e.getData(LangDataKeys.PSI_FILE)
-        val currentProj = e.project
 
-        (psiFile as? KtFile)?.let {
-            """
-                File name: ${it.containingFile.name}
-                Imports: ${it.importList?.imports?.joinToString { import ->
-                    import.containingFile.name
-                }}
-            """.trimIndent()
-        }?.let {
-            Messages.showMessageDialog(
-                    currentProj,
-                    it,
-                    "Title",
-                    Messages.getInformationIcon()
-            )
-        }
-//            println("KtFile: ${psiFile.virtualFilePath}")
-
-//        Psi
-//        val location: Location = Location.fromEditor(editor, project)
-//        val psiElement = psiFile.findElementAt(0)!!
-
-//        PsiDocumentManager.getInstance(e.project!!).getDocument(psiFile).
-//        val psiMethod: PsiMethod = PsiTreeUtil.getParentOfType(psiElement, PsiMethod::class.java)!!
-//        return KtClassHelper.getKtClassForElement(psiElement)
+        return (psiFile as? KtFile)?.let {
+            it.importList?.imports?.map { item ->
+                item.alias as PsiElement
+            } ?: emptyList()
+        } ?: emptyList()
     }
 }
