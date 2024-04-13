@@ -18,63 +18,92 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.search.LocalSearchScope
+import com.intellij.psi.util.PsiElementFilter
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.testFramework.utils.editor.findVirtualFile
 import com.intellij.usages.UsageTargetUtil
-import com.ylz.kt_extension_refactor.utils.getVariableName
+import com.ylz.kt_extension_refactor.utils.getValName
 import com.ylz.kt_extension_refactor.utils.isIdReference
 import com.ylz.kt_extension_refactor.utils.isLayoutReference
 import com.ylz.kt_extension_refactor.utils.snakeCaseToCamelCase
 import org.jetbrains.android.augment.ResourceLightField
 import org.jetbrains.android.augment.ResourceRepositoryInnerRClass
 import org.jetbrains.android.facet.AndroidFacet
+import org.jetbrains.kotlin.idea.search.usagesSearch.constructor
+import org.jetbrains.kotlin.idea.util.ImportInsertHelper
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.KtValueArgumentList
+import org.jetbrains.kotlin.psi.KtVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.findFunctionByName
+import org.jetbrains.kotlin.psi.psiUtil.findPropertyByName
+import org.jetbrains.kotlin.psi.psiUtil.getValueParameters
+import org.jetbrains.kotlin.psi.psiUtil.isPrivate
 
 class InsertVariableAction : AnAction() {
 
-    private fun doRefactoring(file: PsiFile, project: Project, editor: Editor) {
+    private fun addingBindingVal(bindingClass: LightBindingClass, ktClass: KtClass) {
 
-        LocalSearchScope(file).scope.filterIsInstance(KtElement::class.java).forEach {
-            it.accept(object : KtTreeVisitorVoid() {
+        ktClass.findPropertyByName(bindingClass.getValName())?.run { return }
 
-                override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
+        val project = ktClass.project
+        val factory = KtPsiFactory(project)
 
-                    val isLayoutReference = expression.isLayoutReference()
-                    val isIdReference = expression.isIdReference()
-
-                    when {
-                        isIdReference -> {
-                            GotoDeclarationAction.findTargetElement(
-                                project,
-                                editor,
-                                expression.textOffset
-                            )?.let { element ->
-                                element.containingFile.virtualFile.nameWithoutExtension
-                            }?.let { layoutName ->
-                                findBindingClass(layoutName, file.androidFacet!!)
-                            }?.let { bindingClass ->
-                                renameIdReference(
-                                    expression.textRange,
-                                    expression.text,
-                                    project,
-                                    editor.document,
-                                    bindingClass.getVariableName()
-                                )
-                            }
-                        }
-
-                        isLayoutReference -> {
-                            expression.text
-                        }
-                    }
-                    super.visitSimpleNameExpression(expression)
-                }
-            })
+        val isActivity = ktClass.name?.contains("Activity") == true
+        val bindingProperty = factory.createProperty(
+            "val ${bindingClass.getValName()}: ${bindingClass.name}"
+        )
+        val onCreateFunction =
+            ktClass.findFunctionByName(if (isActivity) "onCreate" else "onCreateView")
+        onCreateFunction?.let { kFunction ->
+            WriteCommandAction.runWriteCommandAction(project) {
+                if (ktClass.isWritable)
+                    ktClass.addBefore(bindingProperty, kFunction)
+            }
         }
+    }
+
+    private fun getIdReferences(file: PsiFile) = PsiTreeUtil.collectElements(file) {
+        (it as? KtSimpleNameExpression)?.isIdReference() == true
+    }
+
+    private fun doRefactoring(file: PsiFile, project: Project, editor: Editor) {
+        getIdReferences(file)
+            .mapNotNull { expression ->
+                GotoDeclarationAction.findTargetElement(
+                    project,
+                    editor,
+                    expression.textOffset
+                )?.containingFile?.virtualFile?.nameWithoutExtension?.let { layoutName ->
+                    findBindingClass(layoutName, file.androidFacet!!)
+                }?.let { bindingClass ->
+//                    renameIdReference(
+//                        expression.textRange,
+//                        expression.text,
+//                        project,
+//                        editor.document,
+//                        bindingClass.getValName()
+//                    )
+                    expression to bindingClass
+                }
+            }.mapNotNull { pair ->
+                val (expression, bindingClass) = pair
+                PsiTreeUtil.getParentOfType(
+                    expression,
+                    KtClass::class.java
+                )?.let { ktClass ->
+                    addingBindingVal(bindingClass, ktClass)
+                }
+            }
+//        }
     }
 
     private fun getPackageFileAndIds(
@@ -104,7 +133,7 @@ class InsertVariableAction : AnAction() {
             Triple(it.first, it.second, findIdUrlsInFile(it.third).map { url -> url.name }.toList())
         } ?: Triple("", "", emptyList())
 
-    fun renameIdReference(
+    private fun renameIdReference(
         textRange: TextRange,
         originalName: String,
         project: Project,
@@ -117,33 +146,6 @@ class InsertVariableAction : AnAction() {
                 textRange.endOffset,
                 "$bindingVariableName.${originalName.snakeCaseToCamelCase()}"
             )
-        }
-    }
-
-    //not used for now
-    private fun renameIdReference(
-        file: PsiFile,
-        document: Document,
-        project: Project,
-        nameToBeReplaced: String
-    ) {
-        LocalSearchScope(file).scope.filterIsInstance(KtElement::class.java).forEach {
-            it.accept(object : KtTreeVisitorVoid() {
-                override fun visitValueArgumentList(list: KtValueArgumentList) {
-                    list.arguments.firstOrNull { arg ->
-                        arg.text.contains(nameToBeReplaced)
-                    }?.let { arg ->
-                        WriteCommandAction.runWriteCommandAction(project) {
-                            val (originalName, textRange) = arg.text to arg.textRange
-                            document.replaceString(
-                                textRange.startOffset,
-                                textRange.endOffset,
-                                "binding.${nameToBeReplaced.snakeCaseToCamelCase()}"
-                            )
-                        }
-                    }
-                }
-            })
         }
     }
 
