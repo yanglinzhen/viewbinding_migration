@@ -1,4 +1,4 @@
-package com.ylz.kt_extension_refactor
+package com.ylz.viewbinding_migration
 
 import android.databinding.tool.ext.capitalizeUS
 import android.databinding.tool.ext.decapitalizeUS

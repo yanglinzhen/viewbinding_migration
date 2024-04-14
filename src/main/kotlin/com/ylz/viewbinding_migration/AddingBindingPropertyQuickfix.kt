@@ -1,4 +1,4 @@
-package com.ylz.kt_extension_refactor
+package com.ylz.viewbinding_migration
 
 import com.android.tools.idea.databinding.module.LayoutBindingModuleCache
 import com.android.tools.idea.databinding.psiclass.LightBindingClass
@@ -7,8 +7,8 @@ import com.intellij.codeInsight.quickfix.UnresolvedReferenceQuickFixProvider
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import com.ylz.kt_extension_refactor.utils.addingBindingVal
-import com.ylz.kt_extension_refactor.utils.findContainerKtClass
+import com.ylz.viewbinding_migration.utils.addingBindingVal
+import com.ylz.viewbinding_migration.utils.findContainerKtClass
 import org.jetbrains.android.facet.AndroidFacet
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.quickfixes.KotlinQuickFixAction
 import org.jetbrains.kotlin.idea.references.KtSimpleNameReference

@@ -14,4 +14,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "kt_extension_refactor"
+rootProject.name = "viewbinding_migration"

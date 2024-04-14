@@ -1,4 +1,4 @@
-package com.ylz.kt_extension_refactor
+package com.ylz.viewbinding_migration
 
 import android.databinding.tool.ext.decapitalizeUS
 import android.databinding.tool.ext.toCamelCaseAsVar
@@ -13,9 +13,9 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
-import com.ylz.kt_extension_refactor.utils.findBindingClassByExpression
-import com.ylz.kt_extension_refactor.utils.findContainerKtClass
-import com.ylz.kt_extension_refactor.utils.isIdReference
+import com.ylz.viewbinding_migration.utils.findBindingClassByExpression
+import com.ylz.viewbinding_migration.utils.findContainerKtClass
+import com.ylz.viewbinding_migration.utils.isIdReference
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.quickfixes.KotlinQuickFixAction
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
@@ -24,7 +24,7 @@ class SyntheticToViewBindingQuickfix(expression: KtSimpleNameExpression) :
     KotlinQuickFixAction<KtSimpleNameExpression>(expression) {
     override fun getFamilyName(): String = "replace.kotlin.synthetic.to.viewbinding"
 
-    override fun getText(): String = "replace kotlin synthetic reference to viewBinding"
+    override fun getText(): String = "Replace kotlin synthetic reference to viewBinding"
 
     override fun invoke(project: Project, editor: Editor?, file: KtFile) {
         element?.let {

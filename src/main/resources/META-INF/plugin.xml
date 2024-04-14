@@ -1,12 +1,13 @@
 <idea-plugin>
-  <id>com.ylz.kt_extension_refactor</id>
-  <name>Kt_extension_refactor</name>
+  <id>com.ylz.viewbinding_migration</id>
+  <name>ViewBinding Migration</name>
 
-  <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+  <vendor email="yanglinzhen@outlook.com" url="https://www.yourcompany.com">yanglinzhen</vendor>
 
   <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+    <br>Provide quickfixes to replace <em>kotlinx.android.synthetic</em> to view bindings.</br>
+    <br>Focus on the view id reference, check quickfixes and apply <em>Replace kotlin synthetic reference to viewBinding</em> action.</br>
+    <br>Focus on the generated <em>Binding</em> variable, apply <em>Adding viewBinding property</em> action, available for Activity and Fragment.</br>
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
@@ -14,8 +15,8 @@
   <depends>org.jetbrains.android</depends>
 
   <extensions defaultExtensionNs="com.intellij" >
-    <annotator language="kotlin" implementationClass="com.ylz.kt_extension_refactor.SyntheticQuickfixAnnotator"/>
-    <codeInsight.unresolvedReferenceQuickFixProvider implementation="com.ylz.kt_extension_refactor.AddingBindingPropertyQuickfixProvider"/>
+    <annotator language="kotlin" implementationClass="com.ylz.viewbinding_migration.SyntheticQuickfixAnnotator"/>
+    <codeInsight.unresolvedReferenceQuickFixProvider implementation="com.ylz.viewbinding_migration.AddingBindingPropertyQuickfixProvider"/>
   </extensions>
 
   <extensions defaultExtensionNs="org.jetbrains.kotlin">
