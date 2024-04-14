@@ -1,13 +1,15 @@
 package com.ylz.kt_extension_refactor
 
-import ai.grazie.utils.capitalize
-import org.junit.Assert.*
+import android.databinding.tool.ext.capitalizeUS
+import android.databinding.tool.ext.decapitalizeUS
+import android.databinding.tool.ext.toCamelCase
+import junit.framework.TestCase.assertEquals
 import org.junit.Test
 
 class InsertVariableActionTest {
 
     @Test
-    fun renameTest() {
+    fun toCamelCaseValTest() {
         val mapping = mapOf(
             "activity_main" to "activityMain",
             "tv_hello_world" to "tvHelloWorld",
@@ -16,11 +18,22 @@ class InsertVariableActionTest {
         )
 
         mapping.forEach { (t, u) ->
-            val result = t.replace("_(\\w)".toRegex()) {
-                it.groupValues[1].uppercase()
-            }
-            println(result)
-//            println(t.replace("_(\\w)(\\w*)".toRegex(), "${"$1".uppercase()}${"$2"}"))
+            val result = t.toCamelCase().decapitalizeUS()
+            assertEquals(u, result)
+        }
+    }
+
+    @Test
+    fun findBindingClassByNameTest() {
+        val mapping = mapOf(
+            "activityMainBinding" to "ActivityMainBinding",
+            "mmLayoutSummaryListErrorBinding" to "MmLayoutSummaryListErrorBinding",
+            "pocMmBtDoubleActionBinding" to "PocMmBtDoubleActionBinding",
+        )
+
+        mapping.forEach { (t, u) ->
+            val result = t.toCamelCase().capitalizeUS()
+            assertEquals(u, result)
         }
     }
 }

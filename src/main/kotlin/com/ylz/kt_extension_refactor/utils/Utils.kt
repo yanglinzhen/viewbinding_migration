@@ -1,16 +1,19 @@
 package com.ylz.kt_extension_refactor.utils
 
-import android.databinding.tool.ext.toCamelCase
+import android.databinding.tool.ext.decapitalizeUS
+import com.android.tools.idea.databinding.module.LayoutBindingModuleCache
 import com.android.tools.idea.databinding.psiclass.LightBindingClass
 import com.android.tools.idea.res.isIdDeclaration
+import com.ibm.icu.lang.UCharacter.LineBreak
+import com.intellij.codeInsight.navigation.actions.GotoDeclarationAction
+import com.intellij.openapi.editor.Editor
+import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.xml.XmlAttributeValue
-import org.jetbrains.kotlin.android.synthetic.AndroidConst
+import org.jetbrains.android.facet.AndroidFacet
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
-import org.jetbrains.kotlin.idea.references.KtSimpleNameReference
-import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
@@ -18,61 +21,66 @@ import org.jetbrains.kotlin.psi.psiUtil.findFunctionByName
 import org.jetbrains.kotlin.psi.psiUtil.findPropertyByName
 import org.jetbrains.kotlin.resolve.source.getPsi
 
+fun KtSimpleNameExpression.findBindingClassByExpression(
+    facet: AndroidFacet,
+    editor: Editor
+): LightBindingClass? {
+    val layoutName = GotoDeclarationAction.findTargetElement(
+        editor.project,
+        editor,
+        textOffset
+    )?.containingFile?.virtualFile?.nameWithoutExtension ?: return null
+
+    return LayoutBindingModuleCache.getInstance(facet).let { cache ->
+        cache.bindingLayoutGroups.firstOrNull {
+            layoutName == it.mainLayout.file.nameWithoutExtension
+        }?.let {
+            cache.getLightBindingClasses(it).first()
+        }
+    }
+}
+
+fun PsiElement.findContainerKtClass() = PsiTreeUtil.getParentOfType(
+    this,
+    KtClass::class.java
+)
+
 fun KtReferenceExpression.getTargetPropertyDescriptor(): PropertyDescriptor? =
     resolveToCall()?.resultingDescriptor as? PropertyDescriptor
-
-fun isLayoutPackageIdentifier(reference: KtSimpleNameReference): Boolean {
-    val probablyVariant = reference.element.parent as? KtDotQualifiedExpression ?: return false
-    val probablyKAS =
-        probablyVariant.receiverExpression as? KtDotQualifiedExpression ?: return false
-    return probablyKAS.receiverExpression.text == AndroidConst.SYNTHETIC_PACKAGE
-}
-
-fun KtSimpleNameExpression.isLayoutReference(): Boolean {
-    val reference = mainReference
-    return isLayoutPackageIdentifier(reference)
-}
 
 fun KtSimpleNameExpression.isIdReference(): Boolean {
     val psiElement = getTargetPropertyDescriptor()?.source?.getPsi() ?: false
     return psiElement is XmlAttributeValue && isIdDeclaration(psiElement)
 }
 
-//fun LightBindingClass.getValName() = "${name.substring(0, 1).lowercase()}${name.substring(1)}"
-//
-//fun String.snakeCaseToCamelCase() = this.replace("_(\\w)".toRegex()) {
-//    if (it.groupValues.size > 1)
-//        it.groupValues[1].uppercase()
-//    else ""
-//}
-
-
 fun KtClass.addingBindingVal(bindingClass: LightBindingClass) {
-    findPropertyByName(bindingClass.name.toCamelCase())?.run { return }
+
+    findPropertyByName(bindingClass.name.decapitalizeUS())?.run { return }
 
     val project = project
     val factory = KtPsiFactory(project)
 
     val isActivity = name?.contains("Activity") == true
-    val bindingProperty = factory.createProperty(
-        "val ${bindingClass.name.toCamelCase()}: ${bindingClass.name}"
+    val privateBindingProperty = factory.createProperty(
+        "private var _${bindingClass.name.decapitalizeUS()}: ${bindingClass.name}? = null"
     )
+    val protectedBindingProperty = factory.createProperty(
+        "protected val ${bindingClass.name.decapitalizeUS()}"
+    )
+    val protectedBindingPropertyGetter = factory.createPropertyGetter(
+        factory.createExpression(
+            "${privateBindingProperty.name ?: ""}!!"
+        )
+    )
+
     val onCreateFunction =
         findFunctionByName(if (isActivity) "onCreate" else "onCreateView")
     onCreateFunction?.let { kFunction ->
-    if (isWritable)
-        addBefore(bindingProperty, kFunction)
+        if (isWritable) {
+            addBefore(privateBindingProperty, kFunction)
+            addBefore(protectedBindingProperty, kFunction)
+            addBefore(protectedBindingPropertyGetter, kFunction)
+            addBefore(factory.createNewLine(LineBreak.BREAK_AFTER), kFunction)
+        }
     }
-}
-
-fun KtClass.refactorExpression(expression: KtSimpleNameExpression, bindingClass: LightBindingClass) {
-    val project = project
-    val factory = KtPsiFactory(project)
-
-    //todo fix logic here
-//    simpleNameExpressionVisitor {
-//        it.textRange
-//        expression.text.toCamelCase()
-//        "${bindingClass.text.toCamelCase()}.${expression.text.toCamelCase()}"
-//    }
 }
