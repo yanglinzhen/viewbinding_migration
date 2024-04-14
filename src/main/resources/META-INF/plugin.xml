@@ -8,6 +8,7 @@
     <br>Provide quickfixes to replace <em>kotlinx.android.synthetic</em> to view bindings.</br>
     <br>Focus on the view id reference, check quickfixes and apply <em>Replace kotlin synthetic reference to viewBinding</em> action.</br>
     <br>Focus on the generated <em>Binding</em> variable, apply <em>Adding viewBinding property</em> action, available for Activity and Fragment.</br>
+    <br><em>includes</em> in <em>layout</em> files are not yet been correctly handled. You have to add the <em>root</em> reference for most of cases.</br>
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
