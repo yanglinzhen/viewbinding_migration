@@ -14,6 +14,7 @@ import org.jetbrains.android.facet.AndroidFacet
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
@@ -45,6 +46,11 @@ fun PsiElement.findContainerKtClass() = PsiTreeUtil.getParentOfType(
     KtClass::class.java
 )
 
+fun PsiElement.findFunction() = PsiTreeUtil.getParentOfType(
+    this,
+    KtFunction::class.java
+)
+
 fun KtReferenceExpression.getTargetPropertyDescriptor(): PropertyDescriptor? =
     resolveToCall()?.resultingDescriptor as? PropertyDescriptor
 
@@ -53,7 +59,7 @@ fun KtSimpleNameExpression.isIdReference(): Boolean {
     return psiElement is XmlAttributeValue && isIdDeclaration(psiElement)
 }
 
-fun KtClass.addingBindingVal(bindingClass: LightBindingClass) {
+fun KtClass.addingBindingVal(bindingClass: LightBindingClass, ktFunction: KtFunction?) {
 
     findPropertyByName(bindingClass.name.decapitalizeUS())?.run { return }
 
@@ -61,6 +67,8 @@ fun KtClass.addingBindingVal(bindingClass: LightBindingClass) {
     val factory = KtPsiFactory(project)
 
     val isActivity = name?.contains("Activity") == true
+    val isFragment = name?.contains("Fragment") == true
+
     val privateBindingProperty = factory.createProperty(
         "private var _${bindingClass.name.decapitalizeUS()}: ${bindingClass.name}? = null"
     )
@@ -73,9 +81,12 @@ fun KtClass.addingBindingVal(bindingClass: LightBindingClass) {
         )
     )
 
-    val onCreateFunction =
-        findFunctionByName(if (isActivity) "onCreate" else "onCreateView")
-    onCreateFunction?.let { kFunction ->
+    val targetFunction = when {
+        isActivity -> findFunctionByName("onCreate")
+        isFragment -> findFunctionByName("onCreateView")
+        else -> ktFunction
+    }
+    targetFunction?.let { kFunction ->
         if (isWritable) {
             addBefore(privateBindingProperty, kFunction)
             addBefore(protectedBindingProperty, kFunction)

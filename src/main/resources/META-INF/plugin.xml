@@ -1,28 +1,30 @@
 <idea-plugin>
-  <id>com.ylz.viewbinding_migration</id>
-  <name>ViewBinding Migration</name>
+    <id>com.ylz.viewbinding_migration</id>
+    <name>ViewBinding Migration</name>
 
-  <vendor email="yanglinzhen@outlook.com" url="https://www.yourcompany.com">yanglinzhen</vendor>
+    <vendor email="yanglinzhen@outlook.com" url="https://www.yourcompany.com">yanglinzhen</vendor>
 
-  <description><![CDATA[
+    <description><![CDATA[
     <br>Provide quickfixes to replace <em>kotlinx.android.synthetic</em> to view bindings.</br>
     <br>Focus on the view id reference, check quickfixes and apply <em>Replace kotlin synthetic reference to viewBinding</em> action.</br>
     <br>Focus on the generated <em>Binding</em> variable, apply <em>Adding viewBinding property</em> action, available for Activity and Fragment.</br>
     <br><em>includes</em> in <em>layout</em> files are not yet been correctly handled. You have to add the <em>root</em> reference for most of cases.</br>
   ]]></description>
 
-  <depends>com.intellij.modules.platform</depends>
-  <depends>org.jetbrains.kotlin</depends>
-  <depends>org.jetbrains.android</depends>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
+    <depends>org.jetbrains.android</depends>
 
-  <extensions defaultExtensionNs="com.intellij" >
-    <annotator language="kotlin" implementationClass="com.ylz.viewbinding_migration.SyntheticQuickfixAnnotator"/>
-    <codeInsight.unresolvedReferenceQuickFixProvider implementation="com.ylz.viewbinding_migration.AddingBindingPropertyQuickfixProvider"/>
-  </extensions>
+    <extensions defaultExtensionNs="com.intellij">
+        <annotator implementationClass="com.ylz.viewbinding_migration.SyntheticQuickfixAnnotator"
+            language="kotlin" />
+        <codeInsight.unresolvedReferenceQuickFixProvider
+            implementation="com.ylz.viewbinding_migration.AddingBindingPropertyQuickfixProvider" />
 
-  <extensions defaultExtensionNs="org.jetbrains.kotlin">
-  </extensions>
+        <localInspection bundle="messages.ViewBindingLintBundle" enabledByDefault="true"
+            groupKey="view.binding.migration.group.name" implementationClass="com.ylz.viewbinding_migration.lint.inspections.ViewBindingNotInitInspection"
+            key="view.binding.migration.not.init" language="kotlin" level="ERROR"
+            shortName="ViewBindingNotInit" />
 
-  <actions>
-  </actions>
+    </extensions>
 </idea-plugin>

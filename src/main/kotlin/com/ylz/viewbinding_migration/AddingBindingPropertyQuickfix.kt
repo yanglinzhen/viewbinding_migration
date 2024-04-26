@@ -9,6 +9,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.ylz.viewbinding_migration.utils.addingBindingVal
 import com.ylz.viewbinding_migration.utils.findContainerKtClass
+import com.ylz.viewbinding_migration.utils.findFunction
 import org.jetbrains.android.facet.AndroidFacet
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.quickfixes.KotlinQuickFixAction
 import org.jetbrains.kotlin.idea.references.KtSimpleNameReference
@@ -26,7 +27,7 @@ class AddingBindingPropertyQuickfix(
 
     override fun invoke(project: Project, editor: Editor?, file: KtFile) {
         WriteCommandAction.runWriteCommandAction(project) {
-            this.element?.findContainerKtClass()?.addingBindingVal(bindingClass)
+            this.element?.findContainerKtClass()?.addingBindingVal(bindingClass, this.element?.findFunction())
         }
     }
 }

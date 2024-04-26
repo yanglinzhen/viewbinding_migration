@@ -14,7 +14,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.ylz.viewbinding_migration.utils.findBindingClassByExpression
-import com.ylz.viewbinding_migration.utils.findContainerKtClass
 import com.ylz.viewbinding_migration.utils.isIdReference
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.quickfixes.KotlinQuickFixAction
 import org.jetbrains.kotlin.psi.KtFile
@@ -28,12 +27,12 @@ class SyntheticToViewBindingQuickfix(expression: KtSimpleNameExpression) :
 
     override fun invoke(project: Project, editor: Editor?, file: KtFile) {
         element?.let {
-            it.findContainerKtClass() to (it to it.findBindingClassByExpression(
+            it to it.findBindingClassByExpression(
                 file.androidFacet!!,
                 editor!!
-            ))
+            )
         }?.let {
-            val (expression, bindingClass) = it.second
+            val (expression, bindingClass) = it
             renameIdReference(
                 expression.textRange,
                 expression.text,
